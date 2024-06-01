@@ -27,7 +27,12 @@ data "aws_iam_policy_document" "lambda_policy" {
 
   statement {
     actions = [
-      "events:PutEvents"
+      "events:PutEvents",
+      "kafka:DescribeCluster",
+      "kafka:GetBootstrapBrokers",
+      "kafka:DescribeTopic",
+      "kafka:Write",
+      "kafka:CreateTopic"
     ]
 
     resources = ["*"]
@@ -40,10 +45,24 @@ resource "aws_iam_role_policy" "lambda_policy" {
   policy = data.aws_iam_policy_document.lambda_policy.json
 }
 
+resource "null_resource" "build_lambda_package" {
+  provisioner "local-exec" {
+    command = <<EOT
+      cd lambda/producer && \
+      docker build -t lambda-builder . && \
+      docker run --rm -v $(pwd):/app lambda-builder sh -c 'cp /lambda_function.zip /app/lambda_function.zip'
+    EOT
+  }
+
+  triggers = {
+    always_run = "${timestamp()}"
+  }
+}
+
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_file = "${path.module}/lambda/producer/src/main.py"
-  output_path = "${path.module}/lambda/producer/main.zip"
+  source_file = "${path.module}/lambda_function.zip"
+  output_path = "${path.module}/lambda_function.zip"
 }
 
 resource "aws_lambda_function" "hello_world" {
@@ -55,9 +74,13 @@ resource "aws_lambda_function" "hello_world" {
   source_code_hash = filebase64sha256(data.archive_file.lambda_zip.output_path)
   environment {
     variables = {
-      LOG_LEVEL = "INFO"
+      LOG_LEVEL             = "INFO"
+      MSK_BOOTSTRAP_SERVERS = "b-1.your-cluster.amazonaws.com:9092,b-2.your-cluster.amazonaws.com:9092"
+      MSK_TOPIC             = "your-topic"
     }
   }
+
+  depends_on = [null_resource.build_lambda_package]
 }
 
 resource "aws_cloudwatch_log_group" "hello_world" {
