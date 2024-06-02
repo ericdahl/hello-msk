@@ -6,6 +6,6 @@
 .terraform
 .terraform.lock.hcl
 
-**/venv*/
+**/.venv*/
 
 **/*zip

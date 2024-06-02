@@ -1,21 +1,32 @@
-import json
-import datetime
 from kafka import KafkaProducer
-import os
+from kafka.errors import KafkaError
+import socket
+import time
+from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
 
-def handler(event, context):
-    current_time = datetime.datetime.now().isoformat()
-    message = {'current_time': current_time}
+class MSKTokenProvider():
+    def token(self):
+        token, _ = MSKAuthTokenProvider.generate_auth_token('us-east-1')
+        return token
 
-    producer = KafkaProducer(
-        bootstrap_servers=os.environ['MSK_BOOTSTRAP_SERVERS'].split(','),
-        value_serializer=lambda v: json.dumps(v).encode('utf-8')
-    )
+tp = MSKTokenProvider()
 
-    producer.send(os.environ['MSK_TOPIC'], message)
-    producer.flush()
+producer = KafkaProducer(
+    bootstrap_servers='boot-us96hkax.c1.kafka-serverless.us-east-1.amazonaws.com:9098',
+    security_protocol='SASL_SSL',
+    sasl_mechanism='OAUTHBEARER',
+    sasl_oauth_token_provider=tp,
+    client_id=socket.gethostname(),
+)
 
-    return {
-        'statusCode': 200,
-        'body': 'Message sent: ' + json.dumps(message)
-    }
+topic = "<my-topic>"
+while True:
+    try:
+        inp=input(">")
+        producer.send(topic, inp.encode())
+        producer.flush()
+        print("Produced!")
+    except Exception:
+        print("Failed to send message:", e)
+
+producer.close()

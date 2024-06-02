@@ -55,23 +55,17 @@ resource "null_resource" "build_lambda_package" {
   }
 
   triggers = {
-    always_run = "${timestamp()}"
+    always_run = "${sha1(file("${path.module}/lambda/producer/src/main.py"))}"
   }
 }
 
-data "archive_file" "lambda_zip" {
-  type        = "zip"
-  source_file = "${path.module}/lambda_function.zip"
-  output_path = "${path.module}/lambda_function.zip"
-}
-
 resource "aws_lambda_function" "hello_world" {
-  filename         = data.archive_file.lambda_zip.output_path
+  filename         = "${path.module}/lambda/producer/lambda_function.zip"
   function_name    = "hello_world"
   role             = aws_iam_role.lambda_role.arn
   handler          = "main.handler"
   runtime          = "python3.9"
-  source_code_hash = filebase64sha256(data.archive_file.lambda_zip.output_path)
+  source_code_hash = try(filebase64sha256("${path.module}/lambda/producer/lambda_function.zip"), 0)
   environment {
     variables = {
       LOG_LEVEL             = "INFO"
