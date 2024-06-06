@@ -107,7 +107,7 @@ sudo yum -y install java-11
 wget https://archive.apache.org/dist/kafka/2.8.1/kafka_2.12-2.8.1.tgz
 tar -xzf kafka_2.12-2.8.1.tgz
 ln -s /kafka_2.12-2.8.1 /kafka
-cd /kafka
+cd /kafka/libs
 wget https://github.com/aws/aws-msk-iam-auth/releases/download/v1.1.1/aws-msk-iam-auth-1.1.1-all.jar
 
 echo 'security.protocol=SASL_SSL' >> /kafka_2.12-2.8.1/bin/client.properties
