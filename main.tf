@@ -26,6 +26,27 @@ resource "aws_security_group_rule" "msk_ingress_ec2" {
   to_port                  = 9098
   type                     = "ingress"
   source_security_group_id = aws_security_group.ec2_debug.id
+  description = "allow ingress from ec2_debug"
+}
+
+resource "aws_security_group_rule" "msk_ingress_lambda_producer" {
+  from_port                = 9098
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.msk.id
+  to_port                  = 9098
+  type                     = "ingress"
+  source_security_group_id = aws_security_group.lambda_producer.id
+  description = "allow ingress from lambda_producer"
+}
+
+# shouldn't be necessary TODO
+resource "aws_security_group_rule" "msk_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1" # -1 indicates all protocols
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.msk.id
 }
 
 resource "aws_msk_serverless_cluster" "example" {
@@ -45,3 +66,17 @@ resource "aws_msk_serverless_cluster" "example" {
   }
 }
 
+data "aws_msk_bootstrap_brokers" "example" {
+  cluster_arn = aws_msk_serverless_cluster.example.arn
+}
+
+data "aws_iam_policy_document" "assume_policy_lambda" {
+  statement {
+    actions = ["sts:AssumeRole"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["lambda.amazonaws.com"]
+    }
+  }
+}

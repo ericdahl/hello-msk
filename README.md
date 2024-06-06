@@ -1,6 +1,6 @@
 # hello-msk
 
-
+## Topic Setup
 ```
 # export BS=<your bootstrap server>
 
@@ -12,6 +12,20 @@ HelloWorld
 Topic: HelloWorld	TopicId: nxMsNnfSTMmAFDljWMU--Q	PartitionCount: 1	ReplicationFactor: 3	Configs: min.insync.replicas=2,segment.bytes=134217728,retention.ms=604800000,message.format.version=2.8-IV2,unclean.leader.election.enable=false,retention.bytes=268435456000
 	Topic: HelloWorld	Partition: 0	Leader: 296	Replicas: 296,280,284	Isr: 296,280,284
 ```
+
+## Console Produce/Consume
+
+```
+# /kafka/bin/kafka-console-producer.sh --bootstrap-server $BS --producer.config /kafka/bin/client.properties --topic HelloWorld
+>hello
+
+
+# /kafka/bin/kafka-console-consumer.sh --bootstrap-server $BS --consumer.config /kafka/bin/client.properties --from-beginning --topic HelloWorld
+hello
+^C
+Processed a total of 1 messages
+```
+
 
 # Notes
 

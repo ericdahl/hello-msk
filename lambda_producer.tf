@@ -1,20 +1,9 @@
-data "aws_iam_policy_document" "lambda_assume_role_policy" {
-  statement {
-    actions = ["sts:AssumeRole"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["lambda.amazonaws.com"]
-    }
-  }
-}
-
-resource "aws_iam_role" "lambda_role" {
+resource "aws_iam_role" "lambda_producer" {
   name               = "lambda_role"
-  assume_role_policy = data.aws_iam_policy_document.lambda_assume_role_policy.json
+  assume_role_policy = data.aws_iam_policy_document.assume_policy_lambda.json
 }
 
-data "aws_iam_policy_document" "lambda_policy" {
+data "aws_iam_policy_document" "lambda_producer" {
   statement {
     actions = [
       "logs:CreateLogGroup",
@@ -37,15 +26,56 @@ data "aws_iam_policy_document" "lambda_policy" {
 
     resources = ["*"]
   }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "kafka-cluster:Connect",
+      "kafka-cluster:AlterCluster",
+      "kafka-cluster:DescribeCluster"
+    ]
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "kafka-cluster:*Topic*",
+      "kafka-cluster:WriteData",
+      "kafka-cluster:ReadData"
+    ]
+    resources = [
+      "*"
+    ]
+  }
+
+  statement {
+    effect = "Allow"
+    actions = [
+      "kafka-cluster:AlterGroup",
+      "kafka-cluster:DescribeGroup"
+    ]
+    resources = [
+      "*"
+    ]
+  }
 }
 
-resource "aws_iam_role_policy" "lambda_policy" {
-  name   = "lambda_policy"
-  role   = aws_iam_role.lambda_role.id
-  policy = data.aws_iam_policy_document.lambda_policy.json
+
+resource "aws_iam_role_policy" "lambda_producer" {
+  role   = aws_iam_role.lambda_producer.id
+  policy = data.aws_iam_policy_document.lambda_producer.json
 }
 
-resource "null_resource" "build_lambda_package" {
+
+resource "aws_iam_role_policy_attachment" "lambda_producer_vpc_policy" {
+  role       = aws_iam_role.lambda_producer.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+resource "null_resource" "build_lambda_producer_package" {
   provisioner "local-exec" {
     command = <<EOT
       cd lambda/producer && \
@@ -59,52 +89,63 @@ resource "null_resource" "build_lambda_package" {
   }
 }
 
-resource "aws_lambda_function" "hello_world" {
+
+resource "aws_lambda_function" "producer" {
   filename         = "${path.module}/lambda/producer/lambda_function.zip"
-  function_name    = "hello_world"
-  role             = aws_iam_role.lambda_role.arn
-  handler          = "main.handler"
+  function_name    = "producer"
+  role             = aws_iam_role.lambda_producer.arn
+  handler          = "main.lambda_handler"
   runtime          = "python3.9"
   source_code_hash = try(filebase64sha256("${path.module}/lambda/producer/lambda_function.zip"), 0)
   environment {
     variables = {
-      LOG_LEVEL             = "INFO"
-      MSK_BOOTSTRAP_SERVERS = "b-1.your-cluster.amazonaws.com:9092,b-2.your-cluster.amazonaws.com:9092"
-      MSK_TOPIC             = "your-topic"
+      BS = data.aws_msk_bootstrap_brokers.example.bootstrap_brokers_sasl_iam
+      TOPIC             = "HelloWorld"
     }
   }
 
-  depends_on = [null_resource.build_lambda_package]
+  vpc_config {
+    security_group_ids = [aws_security_group.lambda_producer.id]
+    subnet_ids = [aws_subnet.public["10.0.0.0/24"].id]
+
+  }
+
+  depends_on = [null_resource.build_lambda_producer_package]
 }
 
-resource "aws_cloudwatch_log_group" "hello_world" {
-  name              = "/aws/lambda/hello_world"
-  retention_in_days = 14
+resource "aws_cloudwatch_log_group" "producer" {
+  name              = "/aws/lambda/producer"
+  retention_in_days = 1
 }
 
-resource "aws_cloudwatch_event_rule" "every_minute" {
+resource "aws_cloudwatch_event_rule" "lambda_producer" {
   name                = "every_minute"
   schedule_expression = "rate(1 minute)"
 }
 
-resource "aws_cloudwatch_event_target" "lambda_target" {
-  rule      = aws_cloudwatch_event_rule.every_minute.name
+resource "aws_cloudwatch_event_target" "lambda_producer" {
+  rule      = aws_cloudwatch_event_rule.lambda_producer.name
   target_id = "lambda"
-  arn       = aws_lambda_function.hello_world.arn
+  arn       = aws_lambda_function.producer.arn
 }
 
-resource "aws_lambda_permission" "allow_cloudwatch" {
+resource "aws_lambda_permission" "producer_allow_cloudwatch" {
   statement_id  = "AllowExecutionFromCloudWatch"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.hello_world.function_name
+  function_name = aws_lambda_function.producer.function_name
   principal     = "events.amazonaws.com"
-  source_arn    = aws_cloudwatch_event_rule.every_minute.arn
+  source_arn    = aws_cloudwatch_event_rule.lambda_producer.arn
 }
 
-output "lambda_function_name" {
-  value = aws_lambda_function.hello_world.function_name
+resource "aws_security_group" "lambda_producer" {
+  vpc_id = aws_vpc.default.id
 }
 
-output "lambda_function_arn" {
-  value = aws_lambda_function.hello_world.arn
+resource "aws_security_group_rule" "lambda_producer_egress_all" {
+  type              = "egress"
+  from_port         = 0
+  to_port           = 0
+  protocol          = "-1" # -1 indicates all protocols
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.lambda_producer.id
 }

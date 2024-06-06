@@ -1,32 +1,50 @@
+import os
+import json
+from datetime import datetime
 from kafka import KafkaProducer
-from kafka.errors import KafkaError
 import socket
-import time
+
 from aws_msk_iam_sasl_signer import MSKAuthTokenProvider
+
 
 class MSKTokenProvider():
     def token(self):
         token, _ = MSKAuthTokenProvider.generate_auth_token('us-east-1')
         return token
 
-tp = MSKTokenProvider()
+def lambda_handler(event, context):
+    # Get the bootstrap server and topic from environment variables
+    bootstrap_server = os.environ.get('BS')
+    topic = os.environ.get('TOPIC')
 
-producer = KafkaProducer(
-    bootstrap_servers='boot-us96hkax.c1.kafka-serverless.us-east-1.amazonaws.com:9098',
-    security_protocol='SASL_SSL',
-    sasl_mechanism='OAUTHBEARER',
-    sasl_oauth_token_provider=tp,
-    client_id=socket.gethostname(),
-)
+    if not bootstrap_server or not topic:
+        raise ValueError("Bootstrap server and topic must be provided as environment variables")
 
-topic = "<my-topic>"
-while True:
-    try:
-        inp=input(">")
-        producer.send(topic, inp.encode())
-        producer.flush()
-        print("Produced!")
-    except Exception:
-        print("Failed to send message:", e)
+    tp = MSKTokenProvider()
 
-producer.close()
+    # Create the Kafka producer with IAM SASL
+    producer = KafkaProducer(
+        bootstrap_servers=os.getenv('BS'),
+        security_protocol='SASL_SSL',
+        sasl_mechanism='OAUTHBEARER',
+        sasl_oauth_token_provider=tp,
+        client_id=socket.gethostname(),
+    )
+
+    # Emit the current time
+    current_time = datetime.utcnow().isoformat()
+    message = json.dumps({'timestamp': current_time}).encode('utf-8')
+
+    # Send the message to the Kafka topic
+    producer.send(topic, message)
+    producer.flush()
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps('Message sent successfully!')
+    }
+
+
+if __name__ == "__main__":
+    # For local testing purposes
+    print(lambda_handler({}, {}))
