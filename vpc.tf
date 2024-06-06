@@ -8,8 +8,8 @@ resource "aws_vpc" "default" {
 
 resource "aws_subnet" "public" {
   for_each = {
-    "10.0.0.0/24": "us-east-1a",
-    "10.0.1.0/24": "us-east-1b",
+    "10.0.0.0/24" : "us-east-1a",
+    "10.0.1.0/24" : "us-east-1b",
   }
   vpc_id                  = aws_vpc.default.id
   availability_zone       = each.value
@@ -26,7 +26,7 @@ resource "aws_route_table" "public" {
 }
 
 resource "aws_route_table_association" "public" {
-  for_each = aws_subnet.public
+  for_each       = aws_subnet.public
   route_table_id = aws_route_table.public.id
   subnet_id      = each.value.id
 }

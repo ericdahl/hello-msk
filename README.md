@@ -1,6 +1,8 @@
 # hello-msk
 
 ```
+kafka-topics.sh --list --bootstrap-server $BS --command-config client.properties
+
 Traceback (most recent call last):
   File "/root/main.py", line 14, in <module>
     producer = KafkaProducer(
@@ -12,3 +14,13 @@ Traceback (most recent call last):
     raise Errors.NoBrokersAvailable()
 kafka.errors.NoBrokersAvailable: NoBrokersAvailable
 ```
+
+# Notes
+
+## IAM
+
+### Service Prefixes
+
+- `kafka-cluster`: Kafka specific operations, mapping to particular ACLs (e.g., CreateTopic, ReadData)
+- `kafka`: create/modify MSK clusters (v1 or v2)
+- `kafkaconnect`: Kafka Connect specific APIs

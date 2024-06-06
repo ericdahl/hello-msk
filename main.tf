@@ -20,11 +20,11 @@ resource "aws_security_group" "msk" {
 }
 
 resource "aws_security_group_rule" "msk_ingress_ec2" {
-  from_port         = 9098
-  protocol          = "tcp"
-  security_group_id = aws_security_group.msk.id
-  to_port           = 9098
-  type              = "ingress"
+  from_port                = 9098
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.msk.id
+  to_port                  = 9098
+  type                     = "ingress"
   source_security_group_id = aws_security_group.ec2_debug.id
 }
 
