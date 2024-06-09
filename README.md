@@ -36,3 +36,7 @@ Processed a total of 1 messages
 - `kafka-cluster`: Kafka specific operations, mapping to particular ACLs (e.g., CreateTopic, ReadData)
 - `kafka`: create/modify MSK clusters (v1 or v2)
 - `kafkaconnect`: Kafka Connect specific APIs
+
+# TODO
+
+- TF for Kafka topics.. ?

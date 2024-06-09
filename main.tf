@@ -39,6 +39,16 @@ resource "aws_security_group_rule" "msk_ingress_lambda_producer" {
   description = "allow ingress from lambda_producer"
 }
 
+resource "aws_security_group_rule" "msk_ingress_lambda_consumer" {
+  from_port                = 9098
+  protocol                 = "tcp"
+  security_group_id        = aws_security_group.msk.id
+  to_port                  = 9098
+  type                     = "ingress"
+  source_security_group_id = aws_security_group.lambda_consumer.id
+  description = "allow ingress from lambda_consumer"
+}
+
 # shouldn't be necessary TODO
 resource "aws_security_group_rule" "msk_egress_all" {
   type              = "egress"

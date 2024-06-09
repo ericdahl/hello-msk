@@ -28,8 +28,7 @@ def lambda_handler(event, context):
         security_protocol='SASL_SSL',
         sasl_mechanism='OAUTHBEARER',
         sasl_oauth_token_provider=tp,
-        client_id=socket.gethostname(),
-    )
+   )
 
     # Emit the current time
     current_time = datetime.utcnow().isoformat()
