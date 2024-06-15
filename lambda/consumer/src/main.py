@@ -34,23 +34,46 @@ def create_kafka_consumer():
 
 def lambda_handler(event, context):
     # Initialize Kafka consumer
+    print("lambda starting")
     consumer = create_kafka_consumer()
+    print(consumer)
+    print(consumer.topics())
+    print(consumer.partitions_for_topic(TOPIC))
 
     # Calculate the timestamp for 3 minutes ago
     three_minutes_ago = datetime.now() - timedelta(minutes=3)
     three_minutes_ago_timestamp = int(time.mktime(three_minutes_ago.timetuple()) * 1000)
 
-    # Poll messages
     messages = []
-    for message in consumer:
-        if message.timestamp >= three_minutes_ago_timestamp:
-            messages.append(message)
-        if datetime.now() - three_minutes_ago > timedelta(minutes=3):
-            break
+    start_time = datetime.now()
 
-    # Output each message
-    for message in messages:
-        print(f"Received message: {message.value.decode('utf-8')}, Timestamp: {message.timestamp}")
+    while (datetime.now() - start_time) < timedelta(minutes=3):
+        print("Polling messages")
+        msg_pack = consumer.poll(timeout_ms=1000)
+        if msg_pack:
+            for tp, msgs in msg_pack.items():
+                for message in msgs:
+                    print(f"Message received: {message.value.decode('utf-8')}, Timestamp: {message.timestamp}")
+                    if message.timestamp >= three_minutes_ago_timestamp:
+                        messages.append(message)
+        else:
+            print("No messages received in this poll")
+
+    print(f"Total messages received: {len(messages)}")
+
+    # # Poll messages
+    # messages = []
+    # for message in consumer:
+    #     if message.timestamp >= three_minutes_ago_timestamp:
+    #         messages.append(message)
+    #     if datetime.now() - three_minutes_ago > timedelta(minutes=3):
+    #         break
+    # print(f"messages=[{messages}]")
+    # # Output each message
+    # for message in messages:
+    #     print(f"Received message: {message.value.decode('utf-8')}, Timestamp: {message.timestamp}")
+    #
+    #
 
     # Close consumer
     consumer.close()

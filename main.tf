@@ -67,6 +67,8 @@ resource "aws_msk_serverless_cluster" "example" {
     security_group_ids = [aws_security_group.msk.id]
   }
 
+
+
   client_authentication {
     sasl {
       iam {
@@ -76,8 +78,21 @@ resource "aws_msk_serverless_cluster" "example" {
   }
 }
 
+resource "aws_msk_configuration" "default" {
+  name              = local.name
+  server_properties = <<EOF
+auto.create.topics.enable = true
+EOF
+
+}
+
+
 data "aws_msk_bootstrap_brokers" "example" {
   cluster_arn = aws_msk_serverless_cluster.example.arn
+}
+
+output "bootstrap" {
+  value = data.aws_msk_bootstrap_brokers.example.bootstrap_brokers_sasl_iam
 }
 
 data "aws_iam_policy_document" "assume_policy_lambda" {

@@ -17,6 +17,9 @@ def lambda_handler(event, context):
     bootstrap_server = os.environ.get('BS')
     topic = os.environ.get('TOPIC')
 
+    print(event)
+    print(context)
+
     if not bootstrap_server or not topic:
         raise ValueError("Bootstrap server and topic must be provided as environment variables")
 
@@ -32,7 +35,7 @@ def lambda_handler(event, context):
 
     # Emit the current time
     current_time = datetime.utcnow().isoformat()
-    message = json.dumps({'timestamp': current_time}).encode('utf-8')
+    message = json.dumps({'timestamp': current_time, "aws.request_id": context.aws_request_id}).encode('utf-8')
 
     # Send the message to the Kafka topic
     producer.send(topic, message)
