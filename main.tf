@@ -26,7 +26,7 @@ resource "aws_security_group_rule" "msk_ingress_ec2" {
   to_port                  = 9098
   type                     = "ingress"
   source_security_group_id = aws_security_group.ec2_debug.id
-  description = "allow ingress from ec2_debug"
+  description              = "allow ingress from ec2_debug"
 }
 
 resource "aws_security_group_rule" "msk_ingress_lambda_producer" {
@@ -36,7 +36,7 @@ resource "aws_security_group_rule" "msk_ingress_lambda_producer" {
   to_port                  = 9098
   type                     = "ingress"
   source_security_group_id = aws_security_group.lambda_producer.id
-  description = "allow ingress from lambda_producer"
+  description              = "allow ingress from lambda_producer"
 }
 
 resource "aws_security_group_rule" "msk_ingress_lambda_consumer" {
@@ -46,7 +46,7 @@ resource "aws_security_group_rule" "msk_ingress_lambda_consumer" {
   to_port                  = 9098
   type                     = "ingress"
   source_security_group_id = aws_security_group.lambda_consumer.id
-  description = "allow ingress from lambda_consumer"
+  description              = "allow ingress from lambda_consumer"
 }
 
 # shouldn't be necessary TODO

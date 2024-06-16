@@ -26,6 +26,14 @@ hello
 Processed a total of 1 messages
 ```
 
+```
+# /kafka/bin/kafka-consumer-groups.sh --bootstrap-server $BS --command-config client.properties --describe --group lambda-consumer
+
+Consumer group 'lambda-consumer' has no active members.
+
+GROUP           TOPIC           PARTITION  CURRENT-OFFSET  LOG-END-OFFSET  LAG             CONSUMER-ID     HOST            CLIENT-ID
+lambda-consumer HelloWorld      0          84              98              14              -               -               -
+```
 
 # Notes
 

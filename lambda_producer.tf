@@ -99,14 +99,14 @@ resource "aws_lambda_function" "producer" {
   source_code_hash = try(filebase64sha256("${path.module}/lambda/producer/lambda_function.zip"), 0)
   environment {
     variables = {
-      BS = data.aws_msk_bootstrap_brokers.example.bootstrap_brokers_sasl_iam
-      TOPIC             = "HelloWorld"
+      BS    = data.aws_msk_bootstrap_brokers.example.bootstrap_brokers_sasl_iam
+      TOPIC = "HelloWorld"
     }
   }
 
   vpc_config {
     security_group_ids = [aws_security_group.lambda_producer.id]
-    subnet_ids = [aws_subnet.public["10.0.0.0/24"].id]
+    subnet_ids         = [aws_subnet.public["10.0.0.0/24"].id]
 
   }
 
