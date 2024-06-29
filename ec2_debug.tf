@@ -78,6 +78,15 @@ resource "aws_security_group" "ec2_debug" {
   vpc_id = aws_vpc.default.id
 }
 
+resource "aws_security_group_rule" "ec2_debug_ingress_ssh" {
+  type              = "ingress"
+  from_port         = 22
+  to_port           = 22
+  protocol          = "tcp"
+  cidr_blocks       = [var.admin_cidr]
+  security_group_id = aws_security_group.ec2_debug.id
+}
+
 resource "aws_security_group_rule" "ec2_debug_egress" {
   type              = "egress"
   from_port         = 0
@@ -88,6 +97,10 @@ resource "aws_security_group_rule" "ec2_debug_egress" {
 }
 
 
+resource "aws_key_pair" "default" {
+  public_key = var.public_key
+}
+
 resource "aws_instance" "ec2_debug" {
   ami = "resolve:ssm:/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
 
@@ -96,6 +109,8 @@ resource "aws_instance" "ec2_debug" {
 
   vpc_security_group_ids = [aws_security_group.ec2_debug.id]
   subnet_id              = aws_subnet.public["10.0.0.0/24"].id
+
+  key_name = aws_key_pair.default.key_name
 
   lifecycle {
     ignore_changes = [ami]
