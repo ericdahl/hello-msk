@@ -47,4 +47,8 @@ lambda-consumer HelloWorld      0          84              98              14   
 
 # TODO
 
+- swap to MSK provisioned
+- multiple Lambda consumers with diff consumer groups?
+- set consumer-id / host / client-id ?
 - TF for Kafka topics.. ?
+- 
